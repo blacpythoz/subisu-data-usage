@@ -7,6 +7,7 @@ fromDate=""
 toDate=""
 today=`date +%d`
 monthAgo=`date +%Y-%m-%d -d "${today} day ago"`
+declare -a infos
 
 
 
@@ -30,6 +31,7 @@ read toDate
     fi
 }
 
+## Login and cookie
 getAccess() {
     curl -s --cookie-jar /tmp/subisu "http://myaccount.subisu.net.np/userportal/newlogin.do?phone=0" --data "type=1&username=${username}&password=${password}" > debugLog
     checkInvalid=`grep "Access Denied" debugLog`
@@ -41,16 +43,20 @@ getAccess() {
 }
 
 
+## Extracts the informations
 getInfo() {
         curl -s --cookie /tmp/subisu "http://myaccount.subisu.net.np/userportal/usageSummary.do" --data "pageTitle=Usage+Summary&fromdate=${fromDate}&todate=${toDate}&actid=${username}&period=last12hrs&submit=Go" --compressed > debug
-    IFS=$'\n'
+        ## Checks for session expiry
+    checkInvalid=`grep "Your Session has been expired" debugLog`
 
+    IFS=$'\n'
     # clean up the mess and add to array
     infos=(`cat debug | grep -A 5 "$username" | sed 's/<[^>]*>//g'`)
-
     unset IFS
 
-    #printing
+}
+
+displayInfo() {
     echo -e "\n\n"
     echo "IP: ${infos[2]}"
     echo "Upload: ${infos[3]}"
@@ -59,6 +65,8 @@ getInfo() {
     echo -e "\n\n"
 }
 
+
 getInput
 getAccess
 getInfo
+displayInfo
